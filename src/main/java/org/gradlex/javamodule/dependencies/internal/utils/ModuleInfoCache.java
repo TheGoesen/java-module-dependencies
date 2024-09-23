@@ -16,11 +16,15 @@
 
 package org.gradlex.javamodule.dependencies.internal.utils;
 
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.Action;
+import org.gradle.api.Transformer;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.provider.ValueSourceSpec;
 import org.gradle.api.tasks.SourceSet;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.gradlex.javamodule.dependencies.internal.utils.ModuleNamingUtil.sourceSetToCapabilitySuffix;
 
@@ -37,7 +42,7 @@ public abstract class ModuleInfoCache {
     private static final Logger LOGGER = (Logger) LoggerFactory.getLogger(ModuleInfoCache.class);
 
     private final boolean initializedInSettings;
-    private final Map<File, ModuleInfo> moduleInfo = new HashMap<>();
+    private final Map<FileSystemLocation, ModuleInfo> moduleInfo = new HashMap<>();
     private final Map<String, String> moduleNameToProjectPath = new HashMap<>();
     private final Map<String, String> moduleNameToCapability = new HashMap<>();
 
@@ -61,12 +66,9 @@ public abstract class ModuleInfoCache {
      * @return parsed module-info.java for the given SourceSet
      */
     public ModuleInfo get(SourceSet sourceSet, ProviderFactory providers) {
-        for (File folder : sourceSet.getJava().getSrcDirs()) {
-            if (maybePutModuleInfo(folder, providers)) {
-                return moduleInfo.get(folder);
-            }
-        }
-        return ModuleInfo.EMPTY;
+        FileCollection sourceDirectories = sourceSet.getJava().getSourceDirectories();
+        return maybePutModuleInfo(sourceDirectories.getElements(), providers).getOrElse(ModuleInfo.EMPTY);
+
     }
 
     /**
@@ -102,15 +104,27 @@ public abstract class ModuleInfoCache {
     }
 
     private boolean maybePutModuleInfo(File folder, ProviderFactory providers) {
-        RegularFileProperty moduleInfoFile = getObjects().fileProperty();
-        moduleInfoFile.set(new File(folder, "module-info.java"));
-        Provider<String> moduleInfoContent = providers.fileContents(moduleInfoFile).getAsText();
-        if (moduleInfoContent.isPresent()) {
-            if (!moduleInfo.containsKey(folder)) {
-                moduleInfo.put(folder, new ModuleInfo(moduleInfoContent.get(), moduleInfoFile.get().getAsFile()));
-            }
-            return true;
-        }
         return false;
+    }
+
+    private Provider<ModuleInfo> maybePutModuleInfo(Provider<Set<FileSystemLocation>> folder, ProviderFactory providers) {
+        return providers.of(ValueSourceModuleInfo.class, new Action<ValueSourceSpec<ValueSourceModuleInfo.ModuleInfoSourceP>>() {
+            @Override
+            public void execute(ValueSourceSpec<ValueSourceModuleInfo.ModuleInfoSourceP> moduleInfoSourcePValueSourceSpec) {
+                moduleInfoSourcePValueSourceSpec.parameters(new Action<ValueSourceModuleInfo.ModuleInfoSourceP>() {
+                    @Override
+                    public void execute(ValueSourceModuleInfo.ModuleInfoSourceP moduleInfoSourceP) {
+                        moduleInfoSourceP.getLocations().set(folder.map(new Transformer<FileCollection, Set<FileSystemLocation>>() {
+                            @Override
+                            public FileCollection transform(Set<FileSystemLocation> fileSystemLocations) {
+                                return getObjects().fileCollection().from(fileSystemLocations);
+                            }
+                        }));
+                    }
+                });
+
+            }
+        });
+
     }
 }

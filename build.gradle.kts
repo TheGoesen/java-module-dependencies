@@ -8,7 +8,7 @@ group = "org.gradlex"
 version = "1.7"
 
 tasks.withType<JavaCompile>().configureEach {
-    options.release = 8
+    options.release = 11
 }
 
 tasks.withType<Javadoc>().configureEach {

@@ -236,7 +236,7 @@ public abstract class JavaModuleDependenciesPlugin implements Plugin<ExtensionAw
 
                 ModuleInfo moduleInfo = javaModuleDependencies.getModuleInfoCache().get().get(sourceSet, project.getProviders());
 
-                t.getModuleInfoPath().convention(moduleInfo.getFilePath().getAbsolutePath());
+                t.getModuleInfoPath().convention("module-info.java");
                 t.getModuleNamePrefix().convention(moduleInfo.moduleNamePrefix(project.getName(), sourceSet.getName(), false));
                 t.getModuleInfo().convention(moduleInfo);
 
@@ -266,11 +266,11 @@ public abstract class JavaModuleDependenciesPlugin implements Plugin<ExtensionAw
         }
         ModuleInfo moduleInfo = javaModuleDependenciesExtension.getModuleInfoCache().get().get(sourceSet, project.getProviders());
         for (String moduleName : moduleInfo.get(moduleDirective)) {
-            declareDependency(moduleName, moduleInfo.getFilePath(), project, sourceSet, configuration, javaModuleDependenciesExtension);
+            declareDependency(moduleName,  project, sourceSet, configuration, javaModuleDependenciesExtension);
         }
     }
 
-    private void declareDependency(String moduleName, File moduleInfoFile, Project project, SourceSet sourceSet, Configuration configuration, JavaModuleDependenciesExtension javaModuleDependencies) {
+    private void declareDependency(String moduleName, Project project, SourceSet sourceSet, Configuration configuration, JavaModuleDependenciesExtension javaModuleDependencies) {
         if (JDKInfo.MODULES.contains(moduleName)) {
             // The module is part of the JDK, no dependency required
             return;
@@ -286,7 +286,7 @@ public abstract class JavaModuleDependenciesPlugin implements Plugin<ExtensionAw
             File sourceSetDir = sourceSet.getJava().getSrcDirs().iterator().next().getParentFile();
             File whiteboxModuleInfoFile = new File(sourceSetDir, "java9/module-info.java");
             if (whiteboxModuleInfoFile.exists()) {
-                moduleInfo = new ModuleInfo(project.getProviders().fileContents(project.getLayout().getProjectDirectory().file(whiteboxModuleInfoFile.getAbsolutePath())).getAsText().get(), whiteboxModuleInfoFile);
+                moduleInfo = new ModuleInfo(project.getProviders().fileContents(project.getLayout().getProjectDirectory().file(whiteboxModuleInfoFile.getAbsolutePath())).getAsText().get());
             }
         }
         return moduleInfo.get(directive).stream()
