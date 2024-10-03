@@ -20,6 +20,8 @@ import org.gradle.api.Action;
 import org.gradle.api.IsolatedAction;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.initialization.ProjectDescriptor;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.model.ObjectFactory;
@@ -27,6 +29,8 @@ import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPlatformExtension;
 import org.gradle.api.plugins.JavaPlatformPlugin;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradlex.javamodule.dependencies.JavaModuleDependenciesExtension;
 import org.gradlex.javamodule.dependencies.JavaModuleDependenciesPlugin;
 import org.gradlex.javamodule.dependencies.JavaModuleVersionsPlugin;
@@ -77,6 +81,13 @@ public abstract class JavaModulesExtension {
         directory(directory, m -> {});
     }
 
+
+
+    public void betterWay() {
+        settings.getGradle().getLifecycle().afterProject(new ProjectIsolatedAction());
+
+    }
+
     /**
      * Register and configure ALL Modules located in direct subfolders of the given folder.
      */
@@ -85,7 +96,8 @@ public abstract class JavaModulesExtension {
         Directory moduleDirectory = getObjects().newInstance(Directory.class, modulesDirectory);
         action.execute(moduleDirectory);
 
-        File[] projectDirs = modulesDirectory.listFiles();
+        Boolean b = moduleDirectory.getAutoScan().get();
+        File[] projectDirs = b ? modulesDirectory.listFiles() : new File[0];
         if (projectDirs == null) {
             throw new RuntimeException("Failed to inspect: " + modulesDirectory);
         }
@@ -154,6 +166,7 @@ public abstract class JavaModulesExtension {
 
         @Override
         public void execute(Project project) {
+            System.out.println("artifact = " + artifact);
             if (project.getName().equals(artifact)) {
                 if (group != null) project.setGroup(group);
                 project.getPlugins().apply(JavaModuleDependenciesPlugin.class);
@@ -183,6 +196,26 @@ public abstract class JavaModulesExtension {
                 project.getPlugins().apply(JavaModuleVersionsPlugin.class);
                 project.getExtensions().getByType(JavaPlatformExtension.class).allowDependencies();
             }
+        }
+    }
+
+    private static class ProjectIsolatedAction implements IsolatedAction<Project> {
+        @Override
+        public void execute(Project project) {
+            SourceSetContainer sourceSets = (SourceSetContainer) project.getExtensions().findByName("sourceSets");
+            if (sourceSets == null) {
+                return;
+            }
+            for (SourceSet sourceSet : sourceSets) {
+                SourceDirectorySet java = sourceSet.getJava();
+                FileCollection sourceDirectories = java.getSourceDirectories();
+                for (File sourceDirectory : sourceDirectories) {
+                    System.out.println("sourceDirectory = " + sourceDirectory);
+                }
+
+            }
+
+
         }
     }
 }

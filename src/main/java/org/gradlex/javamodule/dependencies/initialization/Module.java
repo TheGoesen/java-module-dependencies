@@ -77,6 +77,8 @@ public abstract class Module {
     }
 
     private Stream<File> listChildren(File root, String projectDir) {
+        System.out.println("root = " + root);
+        System.out.println("projectDir = " + projectDir);
         File[] children = new File(root, projectDir).listFiles();
         return children == null ? Stream.empty() : Arrays.stream(children);
     }

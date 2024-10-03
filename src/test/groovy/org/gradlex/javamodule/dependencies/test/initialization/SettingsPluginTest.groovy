@@ -68,11 +68,19 @@ class SettingsPluginTest extends Specification {
         result.task(":lib:compileJava").outcome == SUCCESS
     }
 
+
+
     def "configurationCacheHit"() {
         given:
         settingsFile << '''
             javaModules {
-                directory(".") { plugin("java-library") }
+            betterWay()
+                directory(".") { 
+                    plugin("java-library") 
+                    autoScan= false
+                    module("app")
+                    module("lib")
+                }
             }
         '''
         libModuleInfoFile << 'module abc.lib { }'
@@ -91,37 +99,6 @@ class SettingsPluginTest extends Specification {
         result.getOutput().contains("Calculating task graph as no cached configuration is available for tasks: :app:compileJava")
 
         when:
-        result = runner.build() //TODO Thats a big problem with the Settings Plugin AAAAAAAAH
-        result = runner.build()
-
-        then:
-        result.getOutput().contains("Reusing configuration cache.")
-    }
-
-    def "configurationCacheHit"() {
-        given:
-        settingsFile << '''
-            javaModules {
-                directory(".") { plugin("java-library") }
-            }
-        '''
-        libModuleInfoFile << 'module abc.lib { }'
-        appModuleInfoFile << '''
-            module org.gradlex.test.app {
-                requires abc.lib;
-            }
-        '''
-
-
-        def runner = runner(':app:compileJava')
-        when:
-        def result = runner.build()
-
-        then:
-        result.getOutput().contains("Calculating task graph as no cached configuration is available for tasks: :app:compileJava")
-
-        when:
-        result = runner.build() //TODO Thats a big problem with the Settings Plugin AAAAAAAAH
         result = runner.build()
 
         then:

@@ -41,12 +41,19 @@ public abstract class Directory {
      */
     public abstract ListProperty<String> getPlugins();
 
+    /**
+     *
+     */
+    public abstract Property<Boolean> getAutoScan();
+
+
     @Inject
     protected abstract ObjectFactory getObjects();
 
     @Inject
     public Directory(File root) {
         this.root = root;
+        getAutoScan().convention(true);
     }
 
     /**
