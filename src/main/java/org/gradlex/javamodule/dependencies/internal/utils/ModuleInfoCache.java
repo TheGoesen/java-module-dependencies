@@ -43,6 +43,7 @@ public abstract class ModuleInfoCache {
     @Inject
     public abstract ObjectFactory getObjects();
 
+
     @Inject
     public ModuleInfoCache(boolean initializedInSettings) {
         this.initializedInSettings = initializedInSettings;
@@ -76,6 +77,7 @@ public abstract class ModuleInfoCache {
         }
         return null;
     }
+
 
     /**
      * @param projectRoot the project that should hold a Java module
